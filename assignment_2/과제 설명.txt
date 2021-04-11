@@ -1,0 +1,79 @@
+ 1 : 아프리카
+ 2 : 아시아 
+ 3 : 유럽
+ 4 : 북아메리카
+ 5 : 오세아니아
+ 6 : 남아메리카
+
+
+데이터가 모두 0인 행 삭제.
+
+맥주, 주류, 와인, 총 알코올, 대륙
+
+학습할 데이터와 나중에 결과를 얻을 데이터 따로 나눠줌 (인위적)
+
+
+import tensorflow as tf
+import numpy as np
+
+# 데이터를 읽어옴 
+xy = np.loadtxt('drinks.csv',delimiter=',',dtype=np.float32)
+test_data = np.loadtxt('extraction_data.csv',delimiter=',',dtype=np.float32)
+x_data = xy[:, 0:-1]
+y_data = xy[:, [-1]]
+test_x = test_data[:, 0:-1]
+test_y = test_data[:, [-1]]
+
+X = tf.placeholder(tf.float32, [None, 4])
+Y = tf.placeholder(tf.int32, [None, 1])
+
+# 몇개의 Label로 구분하는지 정해줌
+nb_classes = 6
+
+# 이후에 softmax_cross_entropy_with_logits 에 넣어줄 Y의 one hot 을 설정
+Y_one_hot = tf.one_hot(Y, nb_classes)  
+Y_one_hot = tf.reshape(Y_one_hot, [-1, nb_classes])
+
+
+# 텐서가 바꿀 Variable W,b를 설정 
+W = tf.Variable(tf.random_normal([4, nb_classes]), name='weight')
+b = tf.Variable(tf.random_normal([nb_classes]), name='bias')
+
+# WX + b 형태의 함수를 만듬.
+logits = tf.matmul(X, W) + b
+hypothesis = tf.nn.softmax(logits)
+
+# 기존의 코스트 공식 cost = tf.reduce_mean(-tf.reduce_sum(Y * tf.log(hypothesis), axis=1))
+# 너무 복잡하기에 logits, labels를 쓰는 softmax함수를 만들었음.
+cost_i = tf.nn.softmax_cross_entropy_with_logits(logits=logits,labels=Y_one_hot)
+cost = tf.reduce_mean(cost_i)
+
+#텐서프로우가 조금씩 변수를 바꿔가며 코스트를 줄임.
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0001).minimize(cost)
+
+# 모든 예측 y값이 0~1사이의 값을 가지게 만듬.
+prediction = tf.argmax(hypothesis, 1)
+
+# 예측값이 실제 값과 같은지 
+correct_prediction = tf.equal(prediction, tf.argmax(Y_one_hot, 1))
+
+# 모든 실제 값에 대해 평균적으로 얼만큼 맞았는지
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+# 세션 생성
+with tf.Session() as sess:
+   sess.run(tf.global_variables_initializer())
+
+   for step in range(20000):
+       sess.run(optimizer, feed_dict={X: x_data, Y: y_data})
+       if step % 100 == 0:
+           loss, acc = sess.run([cost, accuracy], feed_dict={
+                                X: x_data, Y: y_data})
+           print("Step: {:5}\tLoss: {:.3f}\tAcc: {:.2%}".format(
+               step, loss, acc))
+
+   # 따로 빼둔 test 데이터를 실험해 봄
+   pred = sess.run(prediction, feed_dict={X: test_x})
+   # y_data: (N,1) = flatten => (N, ) matches pred.shape
+   for p, y in zip(pred, test_y.flatten()):
+       print("[{}] Prediction: {} True Y: {}".format(p == int(y), p, int(y)))
