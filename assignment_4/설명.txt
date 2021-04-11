@@ -1,0 +1,9 @@
+중복 안되게
+1. kaggle 데이터에서, 데이터 수 3000개 이상 선택
+2. multinomial classification 모델 선택
+3. learning rate, data preprocession 처리할것
+4. 제일먼저 데이터 분석 할것
+5. 그림갭쳐시 화질은 최상으로 조정할것
+6. 반드시 결론에서 실험하였던 내용들을 정리할 것
+점수는 30점
+제출 날짜: 12월 11일 오후 12시까지
